@@ -3,7 +3,7 @@
 import numpy as np
 
 
-BOARD_LEN = 2
+BOARD_LEN = 4
 
 
 class TicTacToeEnv(object):
