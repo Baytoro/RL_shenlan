@@ -26,7 +26,7 @@ class TicTacToeEnv(object):
         # 这里直接返回data数据作为状态
         return self.data
 
-    def getReward(self):®
+    def getReward(self):
         """Return (reward_1, reward_2)
         """
         if self.terminal:
