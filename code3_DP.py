@@ -3,7 +3,6 @@
 
 import numpy as np
 
-
 gamma = 0.9
 
 
@@ -53,3 +52,23 @@ class Env(object):
 
                     self.P[i, j, a] = s_n
                     self.R[i, j, a] = r
+
+def value_evaluate(policy, env, max_step=1000, tol=1e-6):
+    V = np.zeros((WORLD_SIZE, WORLD_SIZE), dtype=np.float32)  # 初始化
+    update_step = 0
+    for _ in range(max_step):
+        new_V = V.copy()
+        for i in range(WORLD_SIZE):
+            for j in range(WORLD_SIZE):  # 对每一个状态，更新其值函数
+                qs = np.zeros((N_ACTIONS,), dtype=np.float32)   # 存储每个动作的Q值
+                for a in range(N_ACTIONS):
+                    n_s = env.P[i, j, a]
+                    r = env.R[i, j, a]
+                    n_V = V[n_s[0], n_s[1]]
+                    qs[a] = r + gamma * n_V
+                new_V[i, j] = np.sum(qs * policy[i, j])
+        if np.sum(np.abs(V - new_V)) < tol:
+            break
+        V = new_V
+    return V
+
