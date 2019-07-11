@@ -2,7 +2,10 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
+import time
 
+WORLD_SIZE = 5
+N_ACTIONS = 4  # [North, South, West, East]
 gamma = 0.9
 
 
@@ -39,9 +42,19 @@ class Env(object):
                             s_n = [i + 1, j]
                             r = 0
                     elif a == 2:  # West
-                        pass  # 实现自己的逻辑
-                    else:     # East
-                        pass   # 实现自己的逻辑
+                        if j == 0:
+                            s_n = s
+                            r = -1
+                        else:
+                            s_n = [i, j - 1]
+                            r = 0
+                    else:  # East
+                        if j == WORLD_SIZE - 1:
+                            s_n = s
+                            r = -1
+                        else:
+                            s_n = [i, j + 1]
+                            r = 0
 
                     if s == self.A_pos:
                         s_n = self.A_n_pos
@@ -49,9 +62,9 @@ class Env(object):
                     elif s == self.B_pos:
                         s_n = self.B_n_pos
                         r = 5
-
                     self.P[i, j, a] = s_n
                     self.R[i, j, a] = r
+
 
 def value_evaluate(policy, env, max_step=1000, tol=1e-6):
     V = np.zeros((WORLD_SIZE, WORLD_SIZE), dtype=np.float32)  # 初始化
@@ -72,3 +85,85 @@ def value_evaluate(policy, env, max_step=1000, tol=1e-6):
         V = new_V
     return V
 
+
+def policy_improvement(env, V):
+    policy = np.zeros((WORLD_SIZE, WORLD_SIZE, N_ACTIONS), dtype=np.float32)
+    for i in range(WORLD_SIZE):
+        for j in range(WORLD_SIZE):
+            qs = np.zeros((N_ACTIONS,), dtype=np.float32)
+            for a in range(N_ACTIONS):
+                n_s = env.P[i, j, a]
+                r = env.R[i, j, a]
+                qs[a] = r + gamma * V[n_s[0], n_s[1]]
+            p = (np.abs(qs - np.max(qs)) < 1e-6)   # 这里没有使用==，主要是避免精度损失
+            p = np.array(p, dtype=np.float32) / np.sum(p)  # 默认情况下bool型array会当成int型处理，所以在归一化之前，需要转化浮点型
+            policy[i, j] = p
+    return policy
+
+def policy_iteration(max_iter=1000, max_step=1000, tol=1e-6):
+    env = Env()
+    # 初始化策略
+    policy = np.full((WORLD_SIZE, WORLD_SIZE, N_ACTIONS), 1. / N_ACTIONS, dtype=np.float32)
+    mean_values = []
+    run_times = []
+    last_V = None
+    st = time.time()
+    for _ in range(max_iter):
+        V = value_evaluate(policy, env, max_step, tol)
+        policy = policy_improvement(env, V)
+        mean_values.append(np.mean(V))
+        run_times.append(time.time() - st)
+        if last_V is not None and np.sum(np.abs(V - last_V)) < tol:
+            break
+        last_V = V
+    return V, mean_values, policy, run_times
+
+
+def value_iteration(max_iter=1000, max_step=1000, tol=1e-6):
+    env = Env()
+    V = np.zeros((WORLD_SIZE, WORLD_SIZE), dtype=np.float32)
+    mean_values = []
+    run_times = []
+    st = time.time()
+    for _ in range(max_iter):
+        new_V = V.copy()
+        update_steps = 0
+        for i in range(WORLD_SIZE):
+            for j in range(WORLD_SIZE):
+                qs = np.zeros((N_ACTIONS,), dtype=np.float32)
+                for a in range(N_ACTIONS):
+                    n_s = env.P[i, j, a]
+                    r = env.R[i, j, a]
+                    qs[a] = r + gamma * V[n_s[0], n_s[1]]
+                    update_steps += 1
+                new_V[i, j] = np.max(qs)
+        mean_values.append(np.mean(V))
+        run_times.append(time.time() - st)
+        if np.sum(np.abs(V - new_V)) < tol:
+            break
+        V = new_V
+    return V, mean_values, run_times
+
+def inplace_value_iteration(max_iter=1000, max_step=1000, tol=1e-6):
+    env = Env()
+    V = np.zeros((WORLD_SIZE, WORLD_SIZE), dtype=np.float32)
+    mean_values = []
+    run_times = []
+    st = time.time()
+    for _ in range(max_iter):
+        update_steps = 0
+        last_V = V.copy()   # 本质上inplace更新是不需要存两个V的，不过这里为了和之前的方法对比，也使用了相同的停止条件
+        for i in range(WORLD_SIZE):
+            for j in range(WORLD_SIZE):
+                qs = np.zeros((N_ACTIONS,), dtype=np.float32)
+                for a in range(N_ACTIONS):
+                    n_s = env.P[i, j, a]
+                    r = env.R[i, j, a]
+                    qs[a] = r + gamma * V[n_s[0], n_s[1]]
+                    update_steps += 1
+                V[i, j] = np.max(qs)   # 这里直接对V进行更新
+        run_times.append(time.time() - st)
+        mean_values.append(np.mean(V))
+        if np.sum(np.abs(V - last_V)) < tol:
+            break
+    return V, mean_values, run_times
