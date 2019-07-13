@@ -1,16 +1,27 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
+import numpy as np
 
 class Env(object):
     def __init__(self):
         self.S = ['s1', 's2', 's3', 's4', 's5']  # 状态集合
+        self.P = dict(
+            s1=dict(phone=[1, 0, 0, 0, 0], quit=[0, 1, 0, 0, 0]),
+            s2=dict(phone=[1, 0, 0, 0, 0], study=[0, 0, 1, 0, 0]),
+            s3=dict(study=[0, 0, 0, 1, 0], sleep=[0, 0, 0, 0, 1]),
+            s4=dict(review=[0, 0, 0, 0, 1], noreview=[0, 0.2, 0.4, 0.4, 0])
+        )
+        self.R = dict(
+            s1=dict(phone=-1, quit=0),
+            s2=dict(phone=-1, study=-2),
+            s3=dict(study=-2, sleep=0),
+            s4=dict(review=10, noreview=-5)
+        )
 
     def step(self, s, a):  # 状态转移函数和奖励函数
-        s_n = None
-        r = None
-        terminal = False   # 是否进入终止状态
-        # 实现自己的代码
+        s_n = np.random.choice(self.S, p=self.P[s][a])
+        r = self.R[s][a]
+        terminal = s_n == 's5'
         return s_n, r, terminal
 
 
@@ -23,11 +34,17 @@ class Agent(object):
             's3': ['study', 'sleep'],
             's4': ['review', 'noreview']
         }
+        self.policy = self.random_policy
 
     def random_policy(self, s):
         a = None
         # 实现自己的代码
+        if s in self.available_actions:
+            available_actions = self.available_actions[s]
+            a = np.random.choice(available_actions)
         return a
+
+
 
 
 if __name__ == "__main__":
