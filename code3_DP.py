@@ -65,6 +65,10 @@ class Env(object):
                     self.P[i, j, a] = s_n
                     self.R[i, j, a] = r
 
+    def step(self, s, a):
+        s_n = self.P[s[0], s[1], a]
+        r = self.R[s[0], s[1], a]
+        return s_n, r
 
 def value_evaluate(policy, env, max_step=1000, tol=1e-6):
     V = np.zeros((WORLD_SIZE, WORLD_SIZE), dtype=np.float32)  # 初始化
