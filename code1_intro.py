@@ -5,6 +5,8 @@ import random
 
 BOARD_LEN = 3
 
+
+
 class TicTacToeEnv(object):
     def __init__(self):
         self.data = np.zeros((BOARD_LEN, BOARD_LEN))  # data 表示棋盘当前状态，1和-1分别表示x和o，0表示空位
