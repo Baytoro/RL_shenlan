@@ -4,6 +4,7 @@
 import numpy as np
 import time
 
+
 WORLD_SIZE = 5
 N_ACTIONS = 4  # [North, South, West, East]
 gamma = 0.9
